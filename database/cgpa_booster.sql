@@ -1,12 +1,9 @@
--- =========================================================
 -- CGPA Booster - Database Schema
 -- Run with: mysql -u root -p < cgpa_booster.sql
 -- =========================================================
 
-DROP DATABASE IF EXISTS cgpa_booster;
-CREATE DATABASE cgpa_booster CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE cgpa_booster;
 
+USE defaultdb;
 -- =========================================================
 -- Table: users
 -- =========================================================

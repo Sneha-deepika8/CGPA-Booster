@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community - CGPA Booster</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header">
+    <div class="container">
+        <a href="index.html" class="logo">CGPA Booster</a>
+        <ul class="app-links">
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="resources.html">Resources</a></li>
+            <li><a href="community.html" class="active">Community</a></li>
+            <li><a href="profile.html">Profile</a></li>
+        </ul>
+        <div class="user-chip">
+            <span id="userNameLabel"></span>
+            <a href="logout" class="btn btn-outline btn-sm" style="margin-left:10px;">Logout</a>
+        </div>
+    </div>
+</header>
+
+<main class="container" style="max-width:760px;">
+    <h1 class="page-title">Community</h1>
+    <p class="page-subtitle">Share updates, ask questions, and learn from fellow students.</p>
+
+    <div class="card" style="margin-bottom:30px;">
+        <form id="postForm">
+            <div class="form-group">
+                <label for="postTitle">Title</label>
+                <input type="text" id="postTitle" name="title" placeholder="What's on your mind?" required>
+            </div>
+            <div class="form-group">
+                <label for="postContent">Content</label>
+                <textarea id="postContent" name="content" rows="3" placeholder="Share details, ask a question, or start a discussion..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Post</button>
+        </form>
+        <div id="postAlert" class="alert" style="display:none; margin-top:14px;"></div>
+    </div>
+
+    <div id="postsList">
+        <p style="color:var(--text-light);">Loading posts...</p>
+    </div>
+</main>
+
+<script src="js/script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    loadUser();
+    loadPosts();
+    document.getElementById('postForm').addEventListener('submit', handleAddPost);
+});
+
+async function loadUser() {
+    const res = await apiRequest('profile', { method: 'GET' });
+    if (!res.ok || !res.data.success) {
+        window.location.href = 'login.html?error=Please+log+in+to+continue.';
+        return;
+    }
+    document.getElementById('userNameLabel').textContent = res.data.fullName;
+}
+
+async function loadPosts() {
+    const list = document.getElementById('postsList');
+    const res = await apiRequest('posts', { method: 'GET' });
+
+    if (!res.ok || !res.data.success) {
+        list.innerHTML = '<p style="color:var(--text-light);">Could not load posts.</p>';
+        return;
+    }
+
+    const posts = res.data.posts;
+    if (posts.length === 0) {
+        list.innerHTML = '<div class="empty-state">No posts yet. Be the first to share something!</div>';
+        return;
+    }
+
+    list.innerHTML = posts.map(p => `
+        <div class="card post-card">
+            <div class="post-header">
+                <span class="post-author">${escapeHtml(p.userName)}</span>
+                <span class="post-date">${escapeHtml(p.createdAt)}</span>
+            </div>
+            <div class="post-title">${escapeHtml(p.title)}</div>
+            <div class="post-content">${escapeHtml(p.content)}</div>
+            ${p.isOwner ? `<div style="margin-top:12px;"><button class="btn btn-danger btn-sm" onclick="deletePost(${p.id})">Delete</button></div>` : ''}
+        </div>
+    `).join('');
+}
+
+async function handleAddPost(e) {
+    e.preventDefault();
+    const body = toFormBody({
+        title: document.getElementById('postTitle').value.trim(),
+        content: document.getElementById('postContent').value.trim()
+    });
+
+    const res = await apiRequest('posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body
+    });
+
+    const alertBox = document.getElementById('postAlert');
+    if (res.ok && res.data.success) {
+        document.getElementById('postForm').reset();
+        alertBox.style.display = 'none';
+        loadPosts();
+    } else {
+        alertBox.textContent = res.data.message || 'Could not create post.';
+        alertBox.className = 'alert alert-error';
+        alertBox.style.display = 'block';
+    }
+}
+
+async function deletePost(id) {
+    if (!confirmDelete('Delete this post? This cannot be undone.')) return;
+
+    const res = await apiRequest('posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: toFormBody({ action: 'delete', id: id })
+    });
+
+    if (res.ok && res.data.success) {
+        loadPosts();
+    } else {
+        alert(res.data.message || 'Could not delete post.');
+    }
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+</script>
+</body>
+</html>

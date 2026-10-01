@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile - CGPA Booster</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header">
+    <div class="container">
+        <a href="index.html" class="logo">CGPA Booster</a>
+        <ul class="app-links">
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="resources.html">Resources</a></li>
+            <li><a href="community.html">Community</a></li>
+            <li><a href="profile.html" class="active">Profile</a></li>
+        </ul>
+        <div class="user-chip">
+            <span id="userNameLabel"></span>
+            <a href="logout" class="btn btn-outline btn-sm" style="margin-left:10px;">Logout</a>
+        </div>
+    </div>
+</header>
+
+<main class="container" style="max-width:640px;">
+    <h1 class="page-title">My Profile</h1>
+    <p class="page-subtitle">View and update your account details.</p>
+
+    <div id="alertBox" class="alert" style="display:none;"></div>
+
+    <div class="card" style="margin-bottom:24px;">
+        <div class="stats-grid" style="grid-template-columns:1fr 1fr; margin-bottom:0;">
+            <div class="stat-card">
+                <div class="stat-num" id="resourceCount">0</div>
+                <div class="stat-label">Resources Shared</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="postCount">0</div>
+                <div class="stat-label">Community Posts</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <form id="profileForm">
+            <div class="form-group">
+                <label for="fullName">Full Name</label>
+                <input type="text" id="fullName" name="fullName" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" disabled>
+            </div>
+            <div class="form-group">
+                <label for="college">College</label>
+                <input type="text" id="college" name="college" required>
+            </div>
+            <div class="form-group">
+                <label for="department">Department</label>
+                <input type="text" id="department" name="department" required>
+            </div>
+            <div class="form-group">
+                <label>Account Created</label>
+                <input type="text" id="createdAt" disabled>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+    </div>
+</main>
+
+<script src="js/script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    loadProfile();
+    document.getElementById('profileForm').addEventListener('submit', handleUpdateProfile);
+});
+
+async function loadProfile() {
+    const res = await apiRequest('profile', { method: 'GET' });
+    if (!res.ok || !res.data.success) {
+        window.location.href = 'login.html?error=Please+log+in+to+continue.';
+        return;
+    }
+    const p = res.data;
+    document.getElementById('userNameLabel').textContent = p.fullName;
+    document.getElementById('fullName').value = p.fullName;
+    document.getElementById('email').value = p.email;
+    document.getElementById('college').value = p.college;
+    document.getElementById('department').value = p.department;
+    document.getElementById('createdAt').value = p.createdAt;
+    document.getElementById('resourceCount').textContent = p.resourceCount;
+    document.getElementById('postCount').textContent = p.postCount;
+}
+
+async function handleUpdateProfile(e) {
+    e.preventDefault();
+    const body = toFormBody({
+        action: 'update',
+        fullName: document.getElementById('fullName').value.trim(),
+        college: document.getElementById('college').value.trim(),
+        department: document.getElementById('department').value.trim()
+    });
+
+    const res = await apiRequest('profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body
+    });
+
+    const alertBox = document.getElementById('alertBox');
+    if (res.ok && res.data.success) {
+        alertBox.textContent = 'Profile updated successfully.';
+        alertBox.className = 'alert alert-success';
+        alertBox.style.display = 'block';
+        document.getElementById('userNameLabel').textContent = document.getElementById('fullName').value.trim();
+    } else {
+        alertBox.textContent = res.data.message || 'Could not update profile.';
+        alertBox.className = 'alert alert-error';
+        alertBox.style.display = 'block';
+    }
+}
+</script>
+</body>
+</html>

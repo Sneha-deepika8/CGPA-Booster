@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - CGPA Booster</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header">
+    <div class="container">
+        <a href="index.html" class="logo">CGPA Booster</a>
+        <ul class="app-links">
+            <li><a href="dashboard.html" class="active">Dashboard</a></li>
+            <li><a href="resources.html">Resources</a></li>
+            <li><a href="community.html">Community</a></li>
+            <li><a href="profile.html">Profile</a></li>
+        </ul>
+        <div class="user-chip">
+            <div class="avatar" id="avatarInitial">S</div>
+            <span id="userNameLabel">Student</span>
+            <a href="logout" class="btn btn-outline btn-sm" style="margin-left:10px;">Logout</a>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <h1 class="page-title">Welcome back, <span id="welcomeName">Student</span> 👋</h1>
+    <p class="page-subtitle" id="userMeta">Loading your details...</p>
+
+    <div class="stats-grid">
+        <div class="card stat-card">
+            <div class="stat-num" id="resourceCount">0</div>
+            <div class="stat-label">Resources Shared</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-num" id="postCount">0</div>
+            <div class="stat-label">Community Posts</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-num" id="collegeStat">-</div>
+            <div class="stat-label">College</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-num" id="deptStat">-</div>
+            <div class="stat-label">Department</div>
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <a href="resources.html" class="btn btn-primary">Explore Resources</a>
+        <a href="resources.html?action=share" class="btn btn-outline">Share Resource</a>
+        <a href="community.html" class="btn btn-outline">Community</a>
+        <a href="profile.html" class="btn btn-outline">My Profile</a>
+    </div>
+
+    <h2 class="section-title" style="text-align:left; font-size:1.4rem; margin-bottom:20px;">
+        Recently added resources
+    </h2>
+    <div class="grid grid-3" id="recentResources">
+        <p style="color:var(--text-light);">Loading...</p>
+    </div>
+</main>
+
+<footer class="footer" style="margin-top:60px;">
+    <div class="copyright">&copy; 2026 CGPA Booster. All rights reserved.</div>
+</footer>
+
+<script src="js/script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', loadDashboard);
+
+async function loadDashboard() {
+    const profileRes = await apiRequest('profile', { method: 'GET' });
+    if (!profileRes.ok || !profileRes.data.success) {
+        window.location.href = 'login.html?error=Please+log+in+to+continue.';
+        return;
+    }
+    const p = profileRes.data;
+    document.getElementById('userNameLabel').textContent = p.fullName;
+    document.getElementById('welcomeName').textContent = p.fullName.split(' ')[0];
+    document.getElementById('avatarInitial').textContent = p.fullName.charAt(0).toUpperCase();
+    document.getElementById('userMeta').textContent = p.college + ' · ' + p.department;
+    document.getElementById('resourceCount').textContent = p.resourceCount;
+    document.getElementById('postCount').textContent = p.postCount;
+    document.getElementById('collegeStat').textContent = p.college;
+    document.getElementById('deptStat').textContent = p.department;
+
+    const dataRes = await apiRequest('dashboard-data', { method: 'GET' });
+    const container = document.getElementById('recentResources');
+    if (dataRes.ok && dataRes.data.success && dataRes.data.recentResources.length > 0) {
+        container.innerHTML = dataRes.data.recentResources.map(r => `
+            <div class="card resource-card">
+                <span class="badge">${escapeHtml(r.category)}</span>
+                <h3>${escapeHtml(r.title)}</h3>
+                <div class="meta"><span>By ${escapeHtml(r.uploadedByName)}</span></div>
+            </div>
+        `).join('');
+    } else {
+        container.innerHTML = '<p style="color:var(--text-light);">No resources shared yet. Be the first!</p>';
+    }
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+}
+</script>
+</body>
+</html>
